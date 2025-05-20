@@ -1,0 +1,30 @@
+{
+  "name": "live-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A social commerce platform for live selling",
+  "keywords": [
+    "social-commerce",
+    "live-streaming",
+    "react-native",
+    "expo",
+    "express"
+  ],
+  "license": "MIT",
+  "author": "Victor Ejike (https://github.com/Eprince-hub/live-chat)",
+  "contributors": [
+    "Victor Ejike <https://github.com/Eprince-hub>"
+  ],
+  "scripts": {
+    "build": "pnpm build:types && pnpm --parallel -r build",
+    "build:types": "pnpm --filter @live-chat/types build",
+    "clean": "pnpm --parallel -r clean",
+    "dev": "pnpm --parallel -r dev",
+    "lint": "pnpm --parallel -r lint",
+    "test": "pnpm --parallel -r test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.19",
+    "typescript": "^5.8.3"
+  }
+}
