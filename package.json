@@ -16,11 +16,15 @@
     "Victor Ejike <https://github.com/Eprince-hub>"
   ],
   "scripts": {
+    "api": "pnpm --filter @live-chat/api",
     "build": "pnpm build:types && pnpm --parallel -r build",
     "build:types": "pnpm --filter @live-chat/types build",
     "clean": "pnpm --parallel -r clean",
+    "client": "pnpm --filter @live-chat/mobile",
     "dev": "pnpm --parallel -r dev",
     "lint": "pnpm --parallel -r lint",
+    "prisma-generate": "cd apps/api && pnpm prisma generate && cd ../..",
+    "prisma-init": "cd apps/api && pnpm prisma init && cd ../..",
     "test": "pnpm --parallel -r test"
   },
   "devDependencies": {
