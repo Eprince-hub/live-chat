@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import prisma from '../lib/prisma';
 import { auth } from '../middleware/auth';
 
 const router = Router();
@@ -12,6 +13,8 @@ const registerSchema = z.object({
   username: z.string().min(3).max(30),
   email: z.string().email(),
   password: z.string().min(8),
+  displayName: z.string().min(2).max(50),
+  isSeller: z.boolean().optional(),
 });
 
 const loginSchema = z.object({
@@ -19,43 +22,53 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-// Mock user database (replace with actual database in production)
-const users: User[] = [];
-
-console.log(' users ', users);
-
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password, displayName, isSeller } = req.body;
 
-    console.log(email, username, password);
+    // Validate input
+    const validatedData = registerSchema.parse({
+      email,
+      username,
+      password,
+      displayName,
+      isSeller,
+    });
 
     // Check if user already exists
-    if (users.find((user) => user.email === email)) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: validatedData.email },
+          { username: validatedData.username },
+        ],
+      },
+    });
+
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'USER_EXISTS',
-          message: 'User already exists',
+          message: 'User with this email or username already exists',
         },
       });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
     // Create user
-    const user: User = {
-      id: Date.now().toString(),
-      email,
-      username,
-      password: hashedPassword,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    users.push(user);
+    const user: User = await prisma.user.create({
+      data: {
+        email: validatedData.email,
+        username: validatedData.username,
+        password: hashedPassword,
+        displayName: validatedData.displayName,
+        isSeller: validatedData.isSeller || false,
+      },
+    });
 
     // Generate token
     const token = jwt.sign(
@@ -70,6 +83,8 @@ router.post('/register', async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
+        displayName: user.displayName,
+        isSeller: user.isSeller,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -80,6 +95,16 @@ router.post('/register', async (req, res) => {
       data: response,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.errors[0].message,
+        },
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: {
@@ -95,8 +120,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password }: LoginCredentials = req.body;
 
+    // Validate input
+    const validatedData = loginSchema.parse({ email, password });
+
     // Find user
-    const user = users.find((u) => u.email === email);
+    const user = await prisma.user.findUnique({
+      where: { email: validatedData.email },
+    });
 
     if (!user || !user.password) {
       return res.status(401).json({
@@ -109,7 +139,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(validatedData.password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -134,6 +164,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
+        displayName: user.displayName,
+        isSeller: user.isSeller,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -144,6 +176,16 @@ router.post('/login', async (req, res) => {
       data: response,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.errors[0].message,
+        },
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: {
@@ -155,15 +197,37 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user
-router.get('/me', auth, (req, res) => {
+router.get('/me', auth, async (req, res) => {
   try {
     if (!req.user) {
       throw new Error('User not found');
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        },
+      });
+    }
+
     res.json({
       success: true,
-      data: req.user,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        isSeller: user.isSeller,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
     });
   } catch (error) {
     res.status(500).json({
