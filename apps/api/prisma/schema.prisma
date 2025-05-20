@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  password      String
+  displayName   String
+  avatarUrl     String?
+  bio           String?
+  isVerified    Boolean   @default(false)
+  isSeller      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  products      Product[]
+  streams       Stream[]
+  orders        Order[]     @relation("BuyerOrders")
+  sellerOrders  Order[]     @relation("SellerOrders")
+  followers     Follows[]   @relation("Following")
+  following     Follows[]   @relation("Followers")
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  sellerId    String
+  title       String
+  description String
+  price       Float
+  currency    String    @default("USD")
+  images      String[]
+  category    String
+  inventory   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  seller      User      @relation(fields: [sellerId], references: [id])
+  streams     Stream[]
+  orderItems  OrderItem[]
+}
+
+model Stream {
+  id          String    @id @default(cuid())
+  sellerId    String
+  title       String
+  description String?
+  thumbnailUrl String?
+  status      String    @default("scheduled") // scheduled, live, ended
+  startTime   DateTime
+  endTime     DateTime?
+  viewerCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  seller      User      @relation(fields: [sellerId], references: [id])
+  products    Product[]
+}
+
+model Order {
+  id          String    @id @default(cuid())
+  buyerId     String
+  sellerId    String
+  status      String    @default("pending") // pending, paid, shipped, delivered, cancelled
+  totalAmount Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  buyer       User      @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller      User      @relation("SellerOrders", fields: [sellerId], references: [id])
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id          String    @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  order       Order     @relation(fields: [orderId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+}
+
+model Follows {
+  followerId  String
+  followingId String
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  follower    User      @relation("Following", fields: [followerId], references: [id])
+  following   User      @relation("Followers", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+} 
