@@ -23,8 +23,11 @@
     "client": "pnpm --filter @live-chat/mobile",
     "dev": "pnpm --parallel -r dev",
     "lint": "pnpm --parallel -r lint",
-    "prisma-generate": "cd apps/api && pnpm prisma generate && cd ../..",
+    "prisma-generate": "cd apps/api && pnpm prisma generate && pnpm prisma db push && cd ../..",
     "prisma-init": "cd apps/api && pnpm prisma init && cd ../..",
+    "prisma-migrate": "cd apps/api && pnpm prisma migrate dev --skip-seed && cd ../..",
+    "prisma-reset": "cd apps/api && pnpm prisma migrate reset --force --skip-seed && cd ../..",
+    "prisma-seed": "cd apps/api && pnpm prisma db seed && cd ../..",
     "test": "pnpm --parallel -r test"
   },
   "devDependencies": {

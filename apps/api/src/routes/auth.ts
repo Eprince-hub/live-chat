@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import { z } from 'zod';
+import type { AuthResponse, LoginCredentials, User } from '@live-chat/types';
 import bcrypt from 'bcryptjs';
+import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import type { User, LoginCredentials, AuthResponse } from '@live-chat/types';
+import { z } from 'zod';
 import { auth } from '../middleware/auth';
 
 const router = Router();
@@ -22,7 +22,7 @@ const loginSchema = z.object({
 // Mock user database (replace with actual database in production)
 const users: User[] = [];
 
-console.log(" users ", users);
+console.log(' users ', users);
 
 // Register
 router.post('/register', async (req, res) => {
@@ -61,7 +61,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     const response: AuthResponse = {
@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     const response: AuthResponse = {
@@ -176,4 +176,4 @@ router.get('/me', auth, (req, res) => {
   }
 });
 
-export default router; 
+export default router;
