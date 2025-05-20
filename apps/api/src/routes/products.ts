@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { auth } from '../middleware/auth';
-import prisma from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { Router } from 'express';
+import prisma from '../lib/prisma';
+import { auth } from '../middleware/auth';
 
 const router = Router();
 
@@ -117,7 +117,15 @@ router.post('/', auth, async (req, res) => {
       throw new Error('User not found');
     }
 
-    const { title, description, price, images, category, inventory, streamIds } = req.body;
+    const {
+      title,
+      description,
+      price,
+      images,
+      category,
+      inventory,
+      streamIds,
+    } = req.body;
 
     const product = await prisma.product.create({
       data: {
@@ -211,7 +219,15 @@ router.patch('/:id', auth, async (req, res) => {
       });
     }
 
-    const { title, description, price, images, category, inventory, streamIds } = req.body;
+    const {
+      title,
+      description,
+      price,
+      images,
+      category,
+      inventory,
+      streamIds,
+    } = req.body;
 
     const updatedProduct = await prisma.product.update({
       where: { id: req.params.id },
@@ -327,4 +343,4 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

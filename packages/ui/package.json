@@ -1,0 +1,32 @@
+{
+  "name": "@live-chat/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.73.4",
+    "@expo/vector-icons": "^14.0.0",
+    "react-native-reanimated": "~3.6.2",
+    "@shopify/restyle": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.45",
+    "@types/react-native": "~0.73.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "rimraf": "^5.0.5"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  }
+} 
