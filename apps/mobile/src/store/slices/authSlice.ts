@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
 import type { User } from '@live-chat/types';
+import endpoints from '../../config/api';
+import api from '../../lib/api';
 
 interface AuthState {
   user: User | null;
@@ -20,7 +21,7 @@ const initialState: AuthState = {
 export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }) => {
-    const response = await axios.post('http://localhost:3000/api/auth/login', {
+    const response = await api.post(endpoints.auth.login, {
       email,
       password,
     });
@@ -45,7 +46,7 @@ export const register = createAsyncThunk(
     displayName: string;
     isSeller?: boolean;
   }) => {
-    const response = await axios.post('http://localhost:3000/api/auth/register', {
+    const response = await api.post(endpoints.auth.register, {
       username,
       email,
       password,
@@ -66,9 +67,7 @@ export const checkAuth = createAsyncThunk('auth/check', async () => {
   const token = await SecureStore.getItemAsync('token');
   if (!token) throw new Error('No token found');
 
-  const response = await axios.get('http://localhost:3000/api/auth/me', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await api.get(endpoints.auth.me);
   return { token, user: response.data.data };
 });
 
