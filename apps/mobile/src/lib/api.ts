@@ -1,8 +1,9 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
 
-const API_URL = Constants.expoConfig?.extra?.API_URL || 'http://localhost:3000/api';
+const API_URL =
+  Constants.expoConfig?.extra?.API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -22,7 +23,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add a response interceptor to handle common errors
@@ -35,7 +36,7 @@ api.interceptors.response.use(
       // You might want to dispatch a logout action here
     }
     return Promise.reject(error);
-  }
+  },
 );
 
-export default api; 
+export default api;
