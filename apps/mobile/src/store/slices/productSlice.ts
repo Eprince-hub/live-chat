@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import type { Product } from '@live-chat/types';
+import endpoints from '../../config/api';
+import api from '../../lib/api';
 
 interface ProductState {
   products: Product[];
@@ -20,9 +21,9 @@ export const fetchProducts = createAsyncThunk(
   'product/fetchAll',
   async (sellerId?: string) => {
     const url = sellerId
-      ? `http://localhost:3000/api/products?sellerId=${sellerId}`
-      : 'http://localhost:3000/api/products';
-    const response = await axios.get(url);
+      ? `${endpoints.products.list}?sellerId=${sellerId}`
+      : endpoints.products.list;
+    const response = await api.get(url);
     return response.data.data;
   }
 );
@@ -30,7 +31,7 @@ export const fetchProducts = createAsyncThunk(
 export const fetchProductById = createAsyncThunk(
   'product/fetchById',
   async (productId: string) => {
-    const response = await axios.get(`http://localhost:3000/api/products/${productId}`);
+    const response = await api.get(endpoints.products.getById(productId));
     return response.data.data;
   }
 );
@@ -46,7 +47,7 @@ export const createProduct = createAsyncThunk(
     category: string;
     inventory: number;
   }) => {
-    const response = await axios.post('http://localhost:3000/api/products', data);
+    const response = await api.post(endpoints.products.create, data);
     return response.data.data;
   }
 );
@@ -60,8 +61,8 @@ export const updateProduct = createAsyncThunk(
     productId: string;
     data: Partial<Product>;
   }) => {
-    const response = await axios.patch(
-      `http://localhost:3000/api/products/${productId}`,
+    const response = await api.patch(
+      endpoints.products.update(productId),
       data
     );
     return response.data.data;
@@ -71,7 +72,7 @@ export const updateProduct = createAsyncThunk(
 export const deleteProduct = createAsyncThunk(
   'product/delete',
   async (productId: string) => {
-    await axios.delete(`http://localhost:3000/api/products/${productId}`);
+    await api.delete(endpoints.products.delete(productId));
     return productId;
   }
 );
