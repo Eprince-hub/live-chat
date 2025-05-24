@@ -4,19 +4,22 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start",
-    "start": "expo start",
     "android": "expo start --android",
+    "dev": "expo start",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "test": "jest",
     "lint": "eslint .",
-    "type-check": "tsc"
+    "start": "expo start",
+    "test": "jest",
+    "type-check": "tsc",
+    "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@hookform/resolvers": "^5.0.1",
     "@live-chat/types": "workspace:*",
+    "@live-chat/ui": "workspace:*",
     "@react-navigation/bottom-tabs": "^7.3.13",
+    "@react-navigation/native-stack": "^7.3.13",
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.9.0",
     "expo": "~53.0.0",
@@ -27,13 +30,16 @@
     "expo-splash-screen": "~0.30.8",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
+    "react-hook-form": "^7.56.4",
     "react-native": "0.79.2",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.12.0",
-    "socket.io-client": "^4.7.4"
+    "react-redux": "^9.2.0",
+    "socket.io-client": "^4.7.4",
+    "zod": "^3.25.7"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
