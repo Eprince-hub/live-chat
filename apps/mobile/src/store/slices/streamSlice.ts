@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import type { LiveStream,  } from '@live-chat/types';
+import type { Stream } from '@live-chat/types';
+import endpoints from '../../config/api';
+import api from '../../lib/api';
 
 interface StreamState {
-  streams: LiveStream[];
-  currentStream: LiveStream | null;
+  streams: Stream[];
+  currentStream: Stream | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -17,14 +18,14 @@ const initialState: StreamState = {
 };
 
 export const fetchStreams = createAsyncThunk('stream/fetchAll', async () => {
-  const response = await axios.get('http://localhost:3000/api/streams');
+  const response = await api.get(endpoints.streams.list);
   return response.data.data;
 });
 
 export const fetchStreamById = createAsyncThunk(
   'stream/fetchById',
   async (streamId: string) => {
-    const response = await axios.get(`http://localhost:3000/api/streams/${streamId}`);
+    const response = await api.get(endpoints.streams.getById(streamId));
     return response.data.data;
   }
 );
@@ -37,7 +38,7 @@ export const createStream = createAsyncThunk(
     startTime: Date;
     products: string[];
   }) => {
-    const response = await axios.post('http://localhost:3000/api/streams', data);
+    const response = await api.post(endpoints.streams.create, data);
     return response.data.data;
   }
 );
@@ -51,8 +52,8 @@ export const updateStreamStatus = createAsyncThunk(
     streamId: string;
     status: 'scheduled' | 'live' | 'ended';
   }) => {
-    const response = await axios.patch(
-      `http://localhost:3000/api/streams/${streamId}/status`,
+    const response = await api.patch(
+      endpoints.streams.updateStatus(streamId),
       { status }
     );
     return response.data.data;
