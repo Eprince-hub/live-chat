@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import type { Order } from '@live-chat/types';
+import endpoints from '../../config/api';
+import api from '../../lib/api';
 
 interface OrderState {
   orders: Order[];
@@ -19,7 +20,7 @@ const initialState: OrderState = {
 export const fetchOrders = createAsyncThunk(
   'order/fetchAll',
   async ({ type }: { type: 'buyer' | 'seller' }) => {
-    const response = await axios.get(`http://localhost:3000/api/orders?type=${type}`);
+    const response = await api.get(`${endpoints.orders.list}?type=${type}`);
     return response.data.data;
   }
 );
@@ -27,7 +28,7 @@ export const fetchOrders = createAsyncThunk(
 export const fetchOrderById = createAsyncThunk(
   'order/fetchById',
   async (orderId: string) => {
-    const response = await axios.get(`http://localhost:3000/api/orders/${orderId}`);
+    const response = await api.get(endpoints.orders.getById(orderId));
     return response.data.data;
   }
 );
@@ -42,7 +43,7 @@ export const createOrder = createAsyncThunk(
       price: number;
     }>;
   }) => {
-    const response = await axios.post('http://localhost:3000/api/orders', data);
+    const response = await api.post(endpoints.orders.create, data);
     return response.data.data;
   }
 );
@@ -56,8 +57,8 @@ export const updateOrderStatus = createAsyncThunk(
     orderId: string;
     status: 'paid' | 'shipped' | 'delivered' | 'cancelled';
   }) => {
-    const response = await axios.patch(
-      `http://localhost:3000/api/orders/${orderId}/status`,
+    const response = await api.patch(
+      endpoints.orders.updateStatus(orderId),
       { status }
     );
     return response.data.data;
