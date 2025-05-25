@@ -220,3 +220,80 @@ For support, please open an issue in the repository or contact the maintainers a
 ## Security
 
 To report security vulnerabilities, please email security@livechat.com instead of using the public issue tracker.
+
+## WebRTC Configuration
+
+The application uses WebRTC for peer-to-peer video streaming. To ensure reliable connections, especially across different networks and firewalls, you need to configure STUN and TURN servers.
+
+### Environment Variables
+
+Add the following environment variables to your `.env` file:
+
+```env
+# TURN Server Configuration
+TURN_SERVER_URL=turn:your-turn-server.com:3478
+TURN_SERVER_USERNAME=your_username
+TURN_SERVER_PASSWORD=your_password
+```
+
+### TURN Server Options
+
+1. **Free TURN Server Services**:
+   - [Twilio TURN](https://www.twilio.com/stun-turn) (Free tier available)
+   - [Xirsys](https://xirsys.com/) (Free tier available)
+
+2. **Self-hosted TURN Server**:
+   - [coturn](https://github.com/coturn/coturn) (Open-source TURN server)
+   - [eturnal](https://github.com/processone/eturnal) (Modern TURN server)
+
+### Configuration Details
+
+The application uses the following server configuration:
+
+```typescript
+// TURN server configuration
+const TURN_SERVERS = [
+  {
+    urls: process.env.TURN_SERVER_URL || 'turn:your-turn-server.com:3478',
+    username: process.env.TURN_SERVER_USERNAME || 'username',
+    credential: process.env.TURN_SERVER_PASSWORD || 'password',
+  },
+];
+
+// ICE servers configuration
+const ICE_SERVERS = [
+  {
+    urls: ['stun:stun.l.google.com:19302'], // Free Google STUN server
+  },
+  ...TURN_SERVERS,
+];
+```
+
+### Why TURN Servers are Important
+
+1. **NAT Traversal**: Helps establish connections when peers are behind NATs
+2. **Firewall Bypass**: Allows connections through restrictive firewalls
+3. **Reliability**: Ensures video streaming works across different network conditions
+4. **Fallback Mechanism**: Acts as a relay when direct peer-to-peer connections fail
+
+### Getting Started with TURN Servers
+
+1. **Sign up for a TURN service** (recommended for production):
+   - Create an account with Twilio or Xirsys
+   - Get your TURN server credentials
+   - Add them to your environment variables
+
+2. **Self-host a TURN server** (for development or custom requirements):
+   - Install coturn or eturnal
+   - Configure the server with your domain
+   - Set up SSL certificates
+   - Add the server details to your environment variables
+
+### Testing Your Configuration
+
+To verify your TURN server configuration:
+
+1. Check the WebRTC connection logs in your browser's developer tools
+2. Monitor the ICE connection state
+3. Test with peers on different networks
+4. Verify that connections work through firewalls
