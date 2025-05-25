@@ -85,7 +85,7 @@ export default function LiveScreen() {
         );
 
         setIsStreaming(true);
-        router.push(`/stream/${stream.id}`);
+        router.push(`/(tabs)/stream/${stream.id}`);
       }
     } catch (error: any) {
       console.error('Error starting stream:', error);
