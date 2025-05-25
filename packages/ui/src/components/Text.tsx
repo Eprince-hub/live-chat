@@ -13,9 +13,6 @@ import { Theme } from '../theme';
 
 const variant = createVariant<Theme, 'textVariants'>({
   themeKey: 'textVariants',
-  defaults: {
-    variant: 'body',
-  },
 });
 
 type RestyleProps = VariantProps<Theme, 'textVariants'>;

@@ -1,11 +1,11 @@
+import { useTheme } from '@shopify/restyle';
 import React from 'react';
 import {
-  TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  TouchableOpacity,
   TouchableOpacityProps,
 } from 'react-native';
-import { useTheme } from '@shopify/restyle';
 import { Theme } from '../theme';
 import Text from './Text';
 
@@ -16,7 +16,7 @@ interface ButtonProps extends TouchableOpacityProps {
   loading?: boolean;
 }
 
-const Button: React.FC<ButtonProps> = ({
+const Button = ({
   variant = 'primary',
   size = 'medium',
   label,
@@ -24,7 +24,7 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   style,
   ...props
-}) => {
+}: ButtonProps) => {
   const theme = useTheme<Theme>();
 
   const getBackgroundColor = () => {
@@ -105,4 +105,4 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
-export default Button; 
+export default Button;
