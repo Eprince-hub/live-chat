@@ -1,24 +1,25 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '@live-chat/ui';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#493d8a',
-        tabBarInactiveTintColor: '#62656b',
+        tabBarActiveTintColor: theme.colors.buttonPrimary,
+        tabBarInactiveTintColor: theme.colors.gray600,
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#e5e5e5',
+          backgroundColor: theme.colors.white,
+          borderTopColor: theme.colors.gray200,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
         headerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.white,
         },
-        headerTintColor: '#493d8a',
+        headerTintColor: theme.colors.buttonPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
