@@ -1,96 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
   TextInput,
   ScrollView,
-  TouchableOpacity,
-  Image,
-  FlatList,
-  ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import api from '../../src/lib/api';
+import { Ionicons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../../src/store';
+import { fetchStreams } from '../../src/store/slices/streamSlice';
 import type { Stream } from '@live-chat/types';
 
-type Category = {
-  id: string;
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-};
-
-const categories: Category[] = [
-  { id: '1', name: 'Gaming', icon: 'game-controller' },
-  { id: '2', name: 'Music', icon: 'musical-notes' },
-  { id: '3', name: 'Cooking', icon: 'restaurant' },
-  { id: '4', name: 'Art', icon: 'brush' },
-  { id: '5', name: 'Education', icon: 'school' },
-  { id: '6', name: 'Sports', icon: 'basketball' },
-  { id: '7', name: 'Technology', icon: 'laptop' },
-  { id: '8', name: 'Travel', icon: 'airplane' },
+const categories = [
+  { id: 'all', name: 'All', icon: 'grid' },
+  { id: 'gaming', name: 'Gaming', icon: 'game-controller' },
+  { id: 'music', name: 'Music', icon: 'musical-notes' },
+  { id: 'art', name: 'Art', icon: 'color-palette' },
+  { id: 'tech', name: 'Tech', icon: 'hardware-chip' },
+  { id: 'education', name: 'Education', icon: 'school' },
 ];
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [featuredStreams, setFeaturedStreams] = useState<Stream[]>([]);
-  const [recommendedStreams, setRecommendedStreams] = useState<Stream[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStreams = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [featuredResponse, recommendedResponse] = await Promise.all([
-        api.get('/streams/featured'),
-        api.get('/streams/recommended'),
-      ]);
-      setFeaturedStreams(featuredResponse.data.data || []);
-      setRecommendedStreams(recommendedResponse.data.data || []);
-    } catch (err: any) {
-      // Handle different types of errors
-      if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (err.response.status === 401) {
-          setError('Please sign in to view streams');
-        } else if (err.response.status === 404) {
-          // No streams found is not really an error
-          setFeaturedStreams([]);
-          setRecommendedStreams([]);
-        } else {
-          setError('Unable to load streams at the moment');
-        }
-      } else if (err.request) {
-        // The request was made but no response was received
-        setError('Please check your internet connection');
-      } else {
-        // Something happened in setting up the request
-        setError('Unable to load streams at the moment');
-      }
-      console.error('Error fetching streams:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const dispatch = useDispatch<AppDispatch>();
+  const { streams, isLoading, error } = useSelector(
+    (state: RootState) => state.stream,
+  );
 
   useEffect(() => {
-    fetchStreams();
-  }, []);
+    dispatch(fetchStreams());
+  }, [dispatch]);
 
-  const handleCategoryPress = (category: Category) => {
-    router.push({
-      pathname: '/category/[id]',
-      params: { id: category.id, name: category.name }
-    });
-  };
+  const filteredStreams = streams.filter((stream) => {
+    const matchesSearch = stream.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    // For now, we'll show all streams since category is not in the Stream type
+    return matchesSearch;
+  });
+
+  const renderCategoryItem = ({ item }: { item: typeof categories[0] }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryItem,
+        selectedCategory === item.id && styles.selectedCategory,
+      ]}
+      onPress={() => setSelectedCategory(item.id)}
+    >
+      <Ionicons
+        name={item.icon as any}
+        size={24}
+        color={selectedCategory === item.id ? '#fff' : '#666'}
+      />
+      <Text
+        style={[
+          styles.categoryName,
+          selectedCategory === item.id && styles.selectedCategoryText,
+        ]}
+      >
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
 
   const renderStreamItem = ({ item }: { item: Stream }) => (
     <TouchableOpacity
       style={styles.streamCard}
-      onPress={() => router.push(`/stream/${item.id}`)}
+      onPress={() => router.push(`/(tabs)/stream/${item.id}`)}
     >
       <Image
         source={{ uri: item.thumbnailUrl || 'https://picsum.photos/300/200' }}
@@ -99,7 +82,9 @@ export default function ExploreScreen() {
       />
       <View style={styles.streamInfo}>
         <Text style={styles.streamTitle}>{item.title}</Text>
-        <Text style={styles.streamerName}>{item.streamer.displayName}</Text>
+        <Text style={styles.streamerName}>
+          {item.streamer?.displayName || 'Anonymous Streamer'}
+        </Text>
         <View style={styles.viewerInfo}>
           <View style={styles.viewerDot} />
           <Text style={styles.viewerCount}>{item.viewerCount} watching</Text>
@@ -116,23 +101,7 @@ export default function ExploreScreen() {
     </View>
   );
 
-  const renderStreamSection = (title: string, streams: Stream[]) => {
-    if (streams.length === 0) return null;
-
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <FlatList
-          data={streams}
-          renderItem={renderStreamItem}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-        />
-      </View>
-    );
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#493d8a" />
@@ -141,21 +110,14 @@ export default function ExploreScreen() {
   }
 
   if (error) {
-    return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="cloud-offline-outline" size={48} color="#666" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchStreams}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+    return renderEmptyState(
+      'Unable to load streams',
+      'Please check your connection and try again',
     );
   }
 
-  const hasNoContent = featuredStreams.length === 0 && recommendedStreams.length === 0;
-
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
@@ -166,42 +128,105 @@ export default function ExploreScreen() {
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
-      >
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={styles.categoryCard}
-            onPress={() => handleCategoryPress(category)}
+      <ScrollView style={styles.content}>
+        {/* Featured Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Featured</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.featuredContent}
           >
-            <Ionicons
-              name={category.icon}
-              size={32}
-              color="#493d8a"
-            />
-            <Text style={styles.categoryName}>
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            {filteredStreams.slice(0, 3).map((stream) => (
+              <TouchableOpacity
+                key={stream.id}
+                style={styles.featuredCard}
+                onPress={() => router.push(`/(tabs)/stream/${stream.id}`)}
+              >
+                <Image
+                  source={{ uri: stream.thumbnailUrl || 'https://picsum.photos/300/200' }}
+                  style={styles.featuredThumbnail}
+                  resizeMode="cover"
+                />
+                <View style={styles.featuredInfo}>
+                  <Text style={styles.featuredTitle}>{stream.title}</Text>
+                  <Text style={styles.featuredStreamer}>
+                    {stream.streamer?.displayName || 'Anonymous Streamer'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-      {hasNoContent ? (
-        renderEmptyState(
-          'No streams available',
-          'Be the first to start streaming!'
-        )
-      ) : (
-        <>
-          {renderStreamSection('Featured Streams', featuredStreams)}
-          {renderStreamSection('Recommended for You', recommendedStreams)}
-        </>
-      )}
-    </ScrollView>
+        {/* Live Now Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Live Now</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.liveContent}
+          >
+            {filteredStreams.slice(0, 5).map((stream) => (
+              <TouchableOpacity
+                key={stream.id}
+                style={styles.liveCard}
+                onPress={() => router.push(`/(tabs)/stream/${stream.id}`)}
+              >
+                <Image
+                  source={{ uri: stream.thumbnailUrl || 'https://picsum.photos/300/200' }}
+                  style={styles.liveThumbnail}
+                  resizeMode="cover"
+                />
+                <View style={styles.liveInfo}>
+                  <Text style={styles.liveTitle}>{stream.title}</Text>
+                  <Text style={styles.liveStreamer}>
+                    {stream.streamer?.displayName || 'Anonymous Streamer'}
+                  </Text>
+                  <View style={styles.viewerInfo}>
+                    <View style={styles.viewerDot} />
+                    <Text style={styles.viewerCount}>{stream.viewerCount} watching</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Categories Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContent}
+          >
+            {categories.map((category) => renderCategoryItem({ item: category }))}
+          </ScrollView>
+        </View>
+
+        {/* All Streams Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>All Streams</Text>
+          {filteredStreams.length === 0 ? (
+            renderEmptyState(
+              'No streams found',
+              searchQuery
+                ? 'Try adjusting your search'
+                : 'Be the first to start streaming',
+            )
+          ) : (
+            <FlatList
+              data={filteredStreams}
+              renderItem={renderStreamItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              contentContainerStyle={styles.streamList}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -210,50 +235,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  content: {
+    flex: 1,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    margin: 16,
-    marginBottom: 24,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    height: 44,
+    height: 40,
     fontSize: 16,
-    color: '#1a1a1a',
+  },
+  section: {
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    marginHorizontal: 16,
+    fontWeight: '600',
     color: '#1a1a1a',
-  },
-  categoriesContainer: {
+    marginBottom: 16,
     paddingHorizontal: 16,
-    paddingBottom: 24,
   },
-  categoryCard: {
-    backgroundColor: '#fff',
+  featuredContent: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  featuredCard: {
+    width: 280,
     borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    alignItems: 'center',
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -263,20 +285,99 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  categoryName: {
-    marginTop: 8,
+  featuredThumbnail: {
+    width: '100%',
+    height: 160,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  featuredInfo: {
+    padding: 12,
+  },
+  featuredTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  featuredStreamer: {
+    fontSize: 14,
+    color: '#666',
+  },
+  liveContent: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  liveCard: {
+    width: 240,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  liveThumbnail: {
+    width: '100%',
+    height: 135,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  liveInfo: {
+    padding: 12,
+  },
+  liveTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1a1a1a',
-    textAlign: 'center',
+    marginBottom: 4,
   },
-  section: {
-    marginBottom: 24,
+  liveStreamer: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  categoriesContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  categoriesContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    marginRight: 8,
+  },
+  selectedCategory: {
+    backgroundColor: '#493d8a',
+  },
+  categoryName: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  selectedCategoryText: {
+    color: '#fff',
+  },
+  streamList: {
+    padding: 16,
   },
   streamCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -288,7 +389,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   thumbnail: {
-    height: 180,
+    width: '100%',
+    height: 200,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
@@ -298,13 +400,13 @@ const styles = StyleSheet.create({
   streamTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
     color: '#1a1a1a',
+    marginBottom: 4,
   },
   streamerName: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   viewerInfo: {
     flexDirection: 'row',
@@ -315,48 +417,29 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#ff4d4d',
-    marginRight: 6,
+    marginRight: 4,
   },
   viewerCount: {
     fontSize: 12,
-    color: '#888',
+    color: '#666',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    marginTop: 40,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
     color: '#666',
+    marginTop: 4,
     textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#493d8a',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 }); 
