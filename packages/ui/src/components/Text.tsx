@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Theme } from '../theme';
 
-const variant = createVariant<Theme>({
+const variant = createVariant<Theme, 'textVariants'>({
   themeKey: 'textVariants',
   defaults: {
     variant: 'body',

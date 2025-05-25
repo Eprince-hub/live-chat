@@ -1,50 +1,41 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../../src/store';
-import api from '../../src/lib/api';
 import type { Stream } from '@live-chat/types';
+import React, { useCallback, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../../src/store';
+import { fetchStreams } from '../../src/store/slices/streamSlice';
 
 export default function HomeScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [streams, setStreams] = useState<Stream[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { streams, isLoading, error } = useSelector(
+    (state: RootState) => state.stream,
+  );
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const fetchStreams = async () => {
+  const loadStreams = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await api.get('/streams');
-      setStreams(response.data.data);
+      await dispatch(fetchStreams());
     } catch (err) {
-      setError('Failed to load streams. Please try again.');
       console.error('Error fetching streams:', err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [dispatch]);
 
   useEffect(() => {
-    fetchStreams();
-  }, []);
+    loadStreams();
+  }, [loadStreams]);
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchStreams();
-    setRefreshing(false);
-  }, []);
+    await loadStreams();
+  }, [loadStreams]);
 
   const renderItem = ({ item }: { item: Stream }) => (
     <TouchableOpacity style={styles.streamCard}>
@@ -55,16 +46,20 @@ export default function HomeScreen() {
       />
       <View style={styles.streamInfo}>
         <Text style={styles.streamTitle}>{item.title}</Text>
-        <Text style={styles.streamerName}>{item.streamer.displayName}</Text>
+        <Text style={styles.streamerName}>
+          {item.streamer?.displayName || 'Anonymous Streamer'}
+        </Text>
         <View style={styles.viewerInfo}>
           <View style={styles.viewerDot} />
-          <Text style={styles.viewerCount}>{item.viewerCount} watching</Text>
+          <Text style={styles.viewerCount}>
+            {item.viewerCount || 0} watching
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-  if (loading && !refreshing) {
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#493d8a" />
@@ -76,7 +71,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchStreams}>
+        <TouchableOpacity style={styles.retryButton} onPress={loadStreams}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -106,7 +101,7 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
           }
         />
       )}
@@ -224,4 +219,4 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-}); 
+});
