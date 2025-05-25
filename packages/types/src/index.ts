@@ -7,6 +7,7 @@ export interface User {
   isSeller: boolean;
   password?: string;
   avatar?: string;
+  token?: string;
   createdAt: Date;
   updatedAt: Date;
 }
