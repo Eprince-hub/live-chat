@@ -14,18 +14,22 @@ export default {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: 'com.livechat.app',
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
+      package: 'com.livechat.app',
     },
     web: {
       favicon: './assets/favicon.png',
     },
+    scheme: 'livechat',
     extra: {
-      API_URL: process.env.API_URL || 'http://locahost:3000/api',
+      API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+      WS_URL: process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:3000',
     },
   },
 };
