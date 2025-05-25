@@ -73,6 +73,9 @@ export default function LiveScreen() {
           description,
           startTime: new Date(),
           products: [], // Add products if needed
+          category,
+          isPrivate,
+          enableChat,
         }),
       );
 
