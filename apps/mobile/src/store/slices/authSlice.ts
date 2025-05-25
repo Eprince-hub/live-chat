@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { AuthResponse, LoginCredentials, User } from '@live-chat/types';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
-import type { User } from '@live-chat/types';
 import endpoints from '../../config/api';
 import api from '../../lib/api';
 
@@ -21,67 +21,85 @@ const initialState: AuthState = {
 export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }) => {
-    const response = await api.post(endpoints.auth.login, {
-      email,
-      password,
-    });
-    const { token, user } = response.data.data;
-    await SecureStore.setItemAsync('token', token);
-    return { token, user };
-  }
+    const response = await api.post(endpoints.auth.login, { email, password });
+    await SecureStore.setItemAsync('token', response.data.data.token);
+    return response.data.data;
+  },
 );
 
 export const register = createAsyncThunk(
   'auth/register',
   async ({
-    username,
     email,
     password,
+    username,
     displayName,
-    isSeller,
+    isSeller = false,
   }: {
-    username: string;
     email: string;
     password: string;
+    username: string;
     displayName: string;
     isSeller?: boolean;
   }) => {
     const response = await api.post(endpoints.auth.register, {
-      username,
       email,
       password,
+      username,
       displayName,
       isSeller,
     });
-    const { token, user } = response.data.data;
-    await SecureStore.setItemAsync('token', token);
-    return { token, user };
-  }
+    await SecureStore.setItemAsync('token', response.data.data.token);
+    return response.data.data;
+  },
 );
 
-export const logout = createAsyncThunk('auth/logout', async () => {
-  await SecureStore.deleteItemAsync('token');
-});
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { dispatch }) => {
+    await SecureStore.deleteItemAsync('token');
+    dispatch(clearAuth());
+  },
+);
 
-export const checkAuth = createAsyncThunk('auth/check', async () => {
-  const token = await SecureStore.getItemAsync('token');
-  if (!token) throw new Error('No token found');
-
+export const getCurrentUser = createAsyncThunk('auth/getCurrentUser', async () => {
   const response = await api.get(endpoints.auth.me);
-  return { token, user: response.data.data };
+  return response.data.data;
 });
+
+export const initializeAuth = createAsyncThunk(
+  'auth/initialize',
+  async (_, { dispatch }) => {
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      if (token) {
+        dispatch(setToken(token));
+        await dispatch(getCurrentUser());
+      }
+    } catch (error) {
+      console.error('Failed to initialize auth:', error);
+    }
+  },
+);
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    clearError: (state) => {
+    clearAuth: (state) => {
+      state.user = null;
+      state.token = null;
       state.error = null;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    setToken: (state, action) => {
+      state.token = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -90,12 +108,12 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Login failed';
       })
-      // Register
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -104,33 +122,27 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Registration failed';
       })
-      // Logout
-      .addCase(logout.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-      })
-      // Check Auth
-      .addCase(checkAuth.pending, (state) => {
+      .addCase(getCurrentUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(checkAuth.fulfilled, (state, action) => {
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload;
+        state.error = null;
       })
-      .addCase(checkAuth.rejected, (state) => {
+      .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.user = null;
-        state.token = null;
+        state.error = action.error.message || 'Failed to get current user';
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
-export default authSlice.reducer; 
+export const { clearAuth, setError, setToken } = authSlice.actions;
+export default authSlice.reducer;

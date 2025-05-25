@@ -19,11 +19,26 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['chat/connect/fulfilled', 'webrtc/initialize/fulfilled'],
+        ignoredActions: [
+          'chat/connect/fulfilled',
+          'webrtc/initialize/fulfilled',
+          'auth/register/pending',
+          'auth/register/fulfilled',
+          'auth/register/rejected',
+          'auth/login/pending',
+          'auth/login/fulfilled',
+          'auth/login/rejected',
+        ],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.socket'],
+        ignoredActionPaths: ['payload.socket', 'payload.stream'],
         // Ignore these paths in the state
-        ignoredPaths: ['chat.socket', 'webrtc.socket', 'webrtc.peerConnection', 'webrtc.localStream', 'webrtc.remoteStream'],
+        ignoredPaths: [
+          'chat.socket',
+          'webrtc.socket',
+          'webrtc.peerConnection',
+          'webrtc.localStream',
+          'webrtc.remoteStream',
+        ],
       },
     }),
 });
