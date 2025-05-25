@@ -1,12 +1,10 @@
+import { StreamFormData, streamSchema } from '@/lib/validations/streams';
 import { Ionicons } from '@expo/vector-icons';
-import type { Stream } from '@live-chat/types';
-import {
-  type CameraType,
-  CameraView as ExpoCamera,
-  useCameraPermissions,
-} from 'expo-camera';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
@@ -21,7 +19,6 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import api from '../../src/lib/api';
 import type { AppDispatch, RootState } from '../../src/store';
 import {
   createStream,
@@ -32,19 +29,28 @@ export default function LiveScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [enableChat, setEnableChat] = useState(true);
 
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading: isStreamLoading, error: streamError } = useSelector(
+  const { isLoading, error: streamError } = useSelector(
     (state: RootState) => state.stream,
   );
 
   const cameraRef = useRef<any>(null);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<StreamFormData>({
+    resolver: zodResolver(streamSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      category: '',
+      isPrivate: false,
+      enableChat: true,
+    },
+  });
 
   useEffect(() => {
     if (streamError) {
@@ -52,30 +58,18 @@ export default function LiveScreen() {
     }
   }, [streamError]);
 
-  const handleStartStream = async () => {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a stream title');
-      return;
-    }
-
-    if (!category.trim()) {
-      Alert.alert('Error', 'Please select a category');
-      return;
-    }
-
+  const onSubmit = async (data: StreamFormData) => {
     try {
-      setIsLoading(true);
-
       // Create stream using Redux action
       const resultAction = await dispatch(
         createStream({
-          title,
-          description,
+          title: data.title,
+          description: data.description,
           startTime: new Date(),
           products: [], // Add products if needed
-          category,
-          isPrivate,
-          enableChat,
+          category: data.category,
+          isPrivate: data.isPrivate,
+          enableChat: data.enableChat,
         }),
       );
 
@@ -140,7 +134,7 @@ export default function LiveScreen() {
 
       <View style={styles.cameraContainer}>
         {permission && (
-          <ExpoCamera
+          <CameraView
             ref={cameraRef}
             style={styles.camera}
             facing={facing}
@@ -154,73 +148,116 @@ export default function LiveScreen() {
                 <Ionicons name="camera-reverse" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-          </ExpoCamera>
+          </CameraView>
         )}
       </View>
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Stream Title</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your stream title"
-            value={title}
-            onChangeText={setTitle}
-            editable={!isStreaming}
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[styles.input, errors.title && styles.inputError]}
+                placeholder="Enter your stream title"
+                value={value}
+                onChangeText={onChange}
+                editable={!isStreaming}
+              />
+            )}
           />
+          {errors.title && (
+            <Text style={styles.errorText}>{errors.title.message}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Tell viewers about your stream"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            editable={!isStreaming}
+          <Controller
+            control={control}
+            name="description"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  errors.description && styles.inputError,
+                ]}
+                placeholder="Tell viewers about your stream"
+                value={value}
+                onChangeText={onChange}
+                multiline
+                numberOfLines={4}
+                editable={!isStreaming}
+              />
+            )}
           />
+          {errors.description && (
+            <Text style={styles.errorText}>{errors.description.message}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Select a category"
-            value={category}
-            onChangeText={setCategory}
-            editable={!isStreaming}
+          <Controller
+            control={control}
+            name="category"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[styles.input, errors.category && styles.inputError]}
+                placeholder="Select a category"
+                value={value}
+                onChangeText={onChange}
+                editable={!isStreaming}
+              />
+            )}
           />
+          {errors.category && (
+            <Text style={styles.errorText}>{errors.category.message}</Text>
+          )}
         </View>
 
         <View style={styles.switchGroup}>
           <View style={styles.switchItem}>
             <Text style={styles.switchLabel}>Private Stream</Text>
-            <Switch
-              value={isPrivate}
-              onValueChange={setIsPrivate}
-              trackColor={{ false: '#e5e5e5', true: '#493d8a' }}
-              thumbColor={isPrivate ? '#fff' : '#fff'}
-              disabled={isStreaming}
+            <Controller
+              control={control}
+              name="isPrivate"
+              render={({ field: { onChange, value } }) => (
+                <Switch
+                  value={value}
+                  onValueChange={onChange}
+                  trackColor={{ false: '#e5e5e5', true: '#493d8a' }}
+                  thumbColor={value ? '#fff' : '#fff'}
+                  disabled={isStreaming}
+                />
+              )}
             />
           </View>
 
           <View style={styles.switchItem}>
             <Text style={styles.switchLabel}>Enable Chat</Text>
-            <Switch
-              value={enableChat}
-              onValueChange={setEnableChat}
-              trackColor={{ false: '#e5e5e5', true: '#493d8a' }}
-              thumbColor={enableChat ? '#fff' : '#fff'}
-              disabled={isStreaming}
+            <Controller
+              control={control}
+              name="enableChat"
+              render={({ field: { onChange, value } }) => (
+                <Switch
+                  value={value}
+                  onValueChange={onChange}
+                  trackColor={{ false: '#e5e5e5', true: '#493d8a' }}
+                  thumbColor={value ? '#fff' : '#fff'}
+                  disabled={isStreaming}
+                />
+              )}
             />
           </View>
         </View>
 
         <TouchableOpacity
           style={[styles.button, isStreaming && styles.buttonDisabled]}
-          onPress={handleStartStream}
+          onPress={handleSubmit(onSubmit)}
           disabled={isStreaming || isLoading}
         >
           {isLoading ? (
@@ -306,6 +343,10 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
   },
+  inputError: {
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+  },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
@@ -338,11 +379,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 14,
+    color: '#ff3b30',
+    marginTop: 4,
   },
   errorSubtext: {
     fontSize: 14,
