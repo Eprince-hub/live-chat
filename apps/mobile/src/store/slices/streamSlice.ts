@@ -37,6 +37,9 @@ export const createStream = createAsyncThunk(
     description?: string;
     startTime: Date;
     products: string[];
+    category: string;
+    isPrivate: boolean;
+    enableChat: boolean;
   }) => {
     const response = await api.post(endpoints.streams.create, data);
     return response.data.data;
