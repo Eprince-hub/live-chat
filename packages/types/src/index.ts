@@ -28,6 +28,7 @@ export interface Stream {
   title: string;
   description?: string;
   userId: string;
+  streamer: Omit<User, 'password'>;
   isLive: boolean;
   startedAt?: Date;
   endedAt?: Date;
