@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "android": "expo start --android",
-    "dev": "expo start",
+    "dev": "expo start --clear",
     "ios": "expo start --ios",
     "lint": "eslint .",
     "start": "expo start",
