@@ -17,8 +17,8 @@
   ],
   "scripts": {
     "api": "pnpm --filter @live-chat/api",
-    "build": "pnpm build:types && pnpm --parallel -r build",
-    "build:types": "pnpm --filter @live-chat/types build",
+    "build": "pnpm build:types && pnpm --parallel -r build --filter \"!@live-chat/types\"",
+    "build:types": "cd packages/types && pnpm build",
     "clean": "pnpm --parallel -r clean",
     "client": "pnpm --filter @live-chat/mobile",
     "dev": "pnpm --parallel -r dev",
