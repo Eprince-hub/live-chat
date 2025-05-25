@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Stream } from '@live-chat/types';
-import endpoints from '../../config/api';
 import api from '../../lib/api';
+import endpoints from '../../config/api';
 
 interface StreamState {
   streams: Stream[];
@@ -17,6 +17,22 @@ const initialState: StreamState = {
   error: null,
 };
 
+export const createStream = createAsyncThunk(
+  'stream/create',
+  async (streamData: {
+    title: string;
+    description: string;
+    startTime: string;
+    products: any[];
+    category: string;
+    isPrivate: boolean;
+    enableChat: boolean;
+  }) => {
+    const response = await api.post(endpoints.streams.create, streamData);
+    return response.data.data;
+  },
+);
+
 export const fetchStreams = createAsyncThunk('stream/fetchAll', async () => {
   const response = await api.get(endpoints.streams.list);
   return response.data.data;
@@ -24,61 +40,39 @@ export const fetchStreams = createAsyncThunk('stream/fetchAll', async () => {
 
 export const fetchStreamById = createAsyncThunk(
   'stream/fetchById',
-  async (streamId: string) => {
-    const response = await api.get(endpoints.streams.getById(streamId));
+  async (id: string) => {
+    const response = await api.get(endpoints.streams.getById(id));
     return response.data.data;
-  }
-);
-
-export const createStream = createAsyncThunk(
-  'stream/create',
-  async (data: {
-    title: string;
-    description?: string;
-    startTime: Date;
-    products: string[];
-    category: string;
-    isPrivate: boolean;
-    enableChat: boolean;
-  }) => {
-    const response = await api.post(endpoints.streams.create, data);
-    return response.data.data;
-  }
+  },
 );
 
 export const updateStreamStatus = createAsyncThunk(
   'stream/updateStatus',
-  async ({
-    streamId,
-    status,
-  }: {
-    streamId: string;
-    status: 'scheduled' | 'live' | 'ended';
-  }) => {
-    const response = await api.patch(
-      endpoints.streams.updateStatus(streamId),
-      { status }
-    );
+  async ({ streamId, status }: { streamId: string; status: string }) => {
+    const response = await api.patch(endpoints.streams.updateStatus(streamId), { status });
     return response.data.data;
-  }
+  },
 );
 
 const streamSlice = createSlice({
   name: 'stream',
   initialState,
-  reducers: {
-    clearStreamError: (state) => {
-      state.error = null;
-    },
-    updateViewerCount: (state, action) => {
-      if (state.currentStream) {
-        state.currentStream.viewerCount = action.payload;
-      }
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch all streams
+      .addCase(createStream.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createStream.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentStream = action.payload;
+        state.streams = [action.payload, ...state.streams];
+      })
+      .addCase(createStream.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to create stream';
+      })
       .addCase(fetchStreams.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -91,7 +85,6 @@ const streamSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Failed to fetch streams';
       })
-      // Fetch stream by ID
       .addCase(fetchStreamById.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -104,32 +97,24 @@ const streamSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Failed to fetch stream';
       })
-      // Create stream
-      .addCase(createStream.pending, (state) => {
+      .addCase(updateStreamStatus.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(createStream.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.streams.unshift(action.payload);
-        state.currentStream = action.payload;
-      })
-      .addCase(createStream.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message || 'Failed to create stream';
-      })
-      // Update stream status
       .addCase(updateStreamStatus.fulfilled, (state, action) => {
-        const updatedStream = action.payload;
-        state.streams = state.streams.map((stream) =>
-          stream.id === updatedStream.id ? updatedStream : stream
-        );
-        if (state.currentStream?.id === updatedStream.id) {
-          state.currentStream = updatedStream;
+        state.isLoading = false;
+        if (state.currentStream?.id === action.payload.id) {
+          state.currentStream = action.payload;
         }
+        state.streams = state.streams.map((stream) =>
+          stream.id === action.payload.id ? action.payload : stream
+        );
+      })
+      .addCase(updateStreamStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to update stream status';
       });
   },
 });
 
-export const { clearStreamError, updateViewerCount } = streamSlice.actions;
 export default streamSlice.reducer; 
