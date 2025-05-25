@@ -8,7 +8,6 @@ import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   Platform,
   ScrollView,
   StyleSheet,
@@ -19,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { Button } from '@live-chat/ui';
 import type { AppDispatch, RootState } from '../../src/store';
 import {
   createStream,
@@ -64,8 +64,8 @@ export default function LiveScreen() {
       const resultAction = await dispatch(
         createStream({
           title: data.title,
-          description: data.description,
-          startTime: new Date(),
+          description: data.description || '',
+          startTime: new Date().toISOString(),
           products: [], // Add products if needed
           category: data.category,
           isPrivate: data.isPrivate,
@@ -117,7 +117,7 @@ export default function LiveScreen() {
         <Text style={styles.errorSubtext}>
           Please enable camera access in your device settings
         </Text>
-        <Button onPress={requestPermission} title="grant permission" />
+        <Button onPress={requestPermission} label="Grant Permission" />
       </View>
     );
   }
@@ -134,12 +134,13 @@ export default function LiveScreen() {
 
       <View style={styles.cameraContainer}>
         {permission && (
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing={facing}
-            ratio="16:9"
-          >
+          <View style={styles.cameraWrapper}>
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              facing={facing}
+              ratio="16:9"
+            />
             <View style={styles.cameraControls}>
               <TouchableOpacity
                 style={styles.cameraButton}
@@ -148,7 +149,7 @@ export default function LiveScreen() {
                 <Ionicons name="camera-reverse" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-          </CameraView>
+          </View>
         )}
       </View>
 
@@ -306,6 +307,11 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 16 / 9,
     backgroundColor: '#000',
+    marginBottom: 24,
+  },
+  cameraWrapper: {
+    flex: 1,
+    position: 'relative',
   },
   camera: {
     flex: 1,
@@ -315,15 +321,15 @@ const styles = StyleSheet.create({
     bottom: 16,
     right: 16,
     flexDirection: 'row',
+    gap: 8,
   },
   cameraButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
   form: {
     padding: 16,

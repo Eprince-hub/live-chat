@@ -48,6 +48,7 @@ export default function Register() {
           email: data.email,
           password: data.password,
           displayName: data.fullName,
+          isSeller: false, // Default to false for new registrations
         }),
       ).unwrap();
 

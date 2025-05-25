@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 
 // Get the API URL from environment variables or use a default
 const API_URL = Constants.expoConfig?.extra?.API_URL || 'http://localhost:3000/api';
+const WS_URL = Constants.expoConfig?.extra?.WS_URL || 'ws://localhost:3000';
 
 export const endpoints = {
   auth: {
@@ -26,12 +27,15 @@ export const endpoints = {
     list: `${API_URL}/orders`,
     create: `${API_URL}/orders`,
     getById: (id: string) => `${API_URL}/orders/${id}`,
+    update: (id: string) => `${API_URL}/orders/${id}`,
     updateStatus: (id: string) => `${API_URL}/orders/${id}/status`,
   },
   chat: {
-    messages: (streamId: string) => `${API_URL}/chat/${streamId}/messages`,
-    send: (streamId: string) => `${API_URL}/chat/${streamId}/send`,
+    send: (streamId: string) => `${API_URL}/chat/${streamId}/messages`,
+    history: (streamId: string) => `${API_URL}/chat/${streamId}/messages`,
+    delete: (streamId: string, messageId: string) => `${API_URL}/chat/${streamId}/messages/${messageId}`,
   },
+  ws: WS_URL,
   webrtc: {
     signal: `${API_URL}/webrtc/signal`,
   },
